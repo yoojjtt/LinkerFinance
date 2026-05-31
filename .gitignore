@@ -48,6 +48,9 @@ app.*.map.json
 /ios/Runner/GoogleService-Info.plist
 lib/firebase_options.dart
 
+# bkit
+.bkit/
+
 # Unsupported platforms (iOS/Android only)
 /linux/
 /macos/
