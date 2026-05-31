@@ -218,6 +218,14 @@ class FcmService {
       }
 
       final deviceOs = Platform.isIOS ? 'iOS' : 'ANDROID';
+      dev.log('──── FCM 토큰 등록 요청 ────');
+      dev.log('user_id: $userId');
+      dev.log('company_key: $companyKey');
+      dev.log('app_type: FINANCE');
+      dev.log('device_os: $deviceOs');
+      dev.log('token: ${token.substring(0, 20)}...');
+      dev.log('endpoint: ${ApiConfig.fcmTokenAccess}');
+
       final data = await ApiService.post(ApiConfig.fcmTokenAccess, {
         'company_key': companyKey,
         'user_id': userId,
@@ -226,10 +234,15 @@ class FcmService {
         'device_os': deviceOs,
       });
 
+      dev.log('응답 resultCode: ${data['resultCode']}');
+      dev.log('응답 res: ${data['res']}');
+
       if (data['resultCode'] == '200') {
         _tokenSeq = data['res'] as int;
         await _storage.write(key: 'fcm_token_seq', value: '$_tokenSeq');
-        dev.log('FCM 토큰 서버 등록 완료 (seq: $_tokenSeq)');
+        dev.log('✅ FCM 토큰 서버 등록 완료 (seq: $_tokenSeq)');
+      } else {
+        dev.log('⚠️ FCM 토큰 등록 실패 - resultCode: ${data['resultCode']}');
       }
     } catch (e) {
       dev.log('FCM 토큰 서버 등록 실패: $e');
