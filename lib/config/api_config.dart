@@ -25,4 +25,21 @@ class ApiConfig {
   static const String fcmLogRead = '/api/LB/fcm/log/read';
   static const String fcmLogReadAll = '/api/LB/fcm/log/readAll';
   static const String fcmLogUnreadCount = '/api/LB/fcm/log/unreadCount';
+
+  // 거시경제 대시보드
+  static const String macroLatest = '/api/IV/quant/macro/latest';
+  static const String macroCurrent = '/api/IV/quant/macro/current';
+  static const String macroHistory = '/api/IV/quant/macro/history';
+  static const String macroYieldSpread = '/api/IV/quant/macro/yield-spread';
+  static const String macroFearGreed = '/api/IV/quant/macro/fear-greed';
+  static const String macroCategories = '/api/IV/quant/macro/categories';
+
+  // 관심종목
+  static const String watchlistGroups = '/api/IV/quant/watchlist/groups';
+  static const String watchlistStocks = '/api/IV/quant/watchlist/stocks';
+  static const String watchlistReturns = '/api/IV/quant/watchlist/returns';
+
+  // 종목 차트/검색
+  static const String stockChart = '/api/IV/quant/screener/stock'; // /{code}?days=
+  static const String stockSearch = '/api/IV/kiwoom/stock/search'; // ?keyword=
 }

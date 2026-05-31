@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
+import 'macro/macro_dashboard_screen.dart';
 import 'my_info/my_info_screen.dart';
 import 'notification_list_screen.dart';
+import 'stock/stock_search_screen.dart';
+import 'watchlist/watchlist_screen.dart';
 
 // Design Ref: §6.5 — HomeScreen with BottomNavigationBar (홈/Finance/내정보 3탭)
 class HomeScreen extends StatefulWidget {
@@ -17,8 +20,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
   final _pages = const [
-    _HomePlaceholder(),
-    _FinancePlaceholder(),
+    MacroDashboardScreen(),
+    WatchlistScreen(),
     MyInfoScreen(),
   ];
 
@@ -64,6 +67,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: Color(0xFF1B2E5C)),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const StockSearchScreen()),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: Center(
@@ -121,9 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
             label: '홈',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_outlined),
-            activeIcon: Icon(Icons.account_balance),
-            label: 'Finance',
+            icon: Icon(Icons.star_outline),
+            activeIcon: Icon(Icons.star),
+            label: '관심종목',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
@@ -136,64 +146,3 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _HomePlaceholder extends StatelessWidget {
-  const _HomePlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.dashboard_outlined,
-              size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
-            '메인 대시보드',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade400,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '추후 기능이 추가될 예정입니다',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FinancePlaceholder extends StatelessWidget {
-  const _FinancePlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.account_balance_outlined,
-              size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
-            '재무 관리',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade400,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '주식/재무 기능이 추가될 예정입니다',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
-          ),
-        ],
-      ),
-    );
-  }
-}
