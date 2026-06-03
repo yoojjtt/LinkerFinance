@@ -31,7 +31,17 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>fetch</string>
 	</array>
+	<key>UIUserNotificationSettings</key>
+	<dict>
+		<key>UIUserNotificationTypeBadge</key>
+		<true/>
+		<key>UIUserNotificationTypeAlert</key>
+		<true/>
+		<key>UIUserNotificationTypeSound</key>
+		<true/>
+	</dict>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
