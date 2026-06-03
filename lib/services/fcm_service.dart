@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../config/api_config.dart';
@@ -197,18 +198,15 @@ class FcmService {
   void _updateAppBadge(int count) {
     try {
       if (count > 0) {
-        _messaging.setAutoInitEnabled(true);
+        FlutterAppBadger.updateBadgeCount(count);
+        dev.log('앱 뱃지 업데이트: $count');
+      } else {
+        FlutterAppBadger.removeBadge();
+        dev.log('앱 뱃지 제거');
       }
-      // iOS에서는 서버 push의 badge 필드로 자동 처리됨
-      // 앱 내에서 직접 뱃지를 리셋하려면 아래 호출
-      if (count == 0) {
-        _messaging.setForegroundNotificationPresentationOptions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-      }
-    } catch (_) {}
+    } catch (e) {
+      dev.log('앱 뱃지 업데이트 실패: $e');
+    }
   }
 
   Future<void> markLogAsRead(int seq) async {
