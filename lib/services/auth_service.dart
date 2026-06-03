@@ -33,7 +33,7 @@ class AuthService {
       _username = username;
       _password = password;
 
-      // 로그인 성공 후 FCM 토큰 서버 등록
+      // 로그인 성공 후 FCM 토큰 서버 등록 + 미읽음 카운트 조회
       try {
         final pushEnabled = await FcmService().getPushEnabled();
         if (pushEnabled) {
@@ -42,8 +42,9 @@ class AuthService {
             int.parse(currentUser!.companyKey),
           );
         }
+        await FcmService().fetchUnreadCount();
       } catch (e) {
-        debugPrint('FCM 토큰 등록 실패: $e');
+        debugPrint('FCM 초기화 실패: $e');
       }
 
       return (success: true, message: '');

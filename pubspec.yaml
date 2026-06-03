@@ -41,6 +41,7 @@ dependencies:
   fl_chart: ^0.70.2
   intl: ^0.20.2
   k_chart: ^0.7.1
+  interactive_chart: ^0.3.6
 
 dev_dependencies:
   flutter_test:

@@ -43,6 +43,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       final data = await ApiService.get(
         ApiConfig.fcmLogMy,
         params: {
+          'company_key': user.companyKey,
           'user_id': user.userId,
           'app_type': 'FINANCE',
           'offset': '$_offset',

@@ -77,7 +77,12 @@ class FcmService {
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
-    dev.log('포그라운드 메시지 수신: ${message.notification?.title}');
+    dev.log('──── FCM 메시지 수신 ────');
+    dev.log('title: ${message.notification?.title}');
+    dev.log('body: ${message.notification?.body}');
+    dev.log('data: ${message.data}');
+    dev.log('apple badge: ${message.notification?.apple?.badge}');
+    dev.log('apple sound: ${message.notification?.apple?.sound?.name}');
     _addNotification(message);
     _showInAppNotification(message);
     fetchUnreadCount();
@@ -86,6 +91,7 @@ class FcmService {
   void _handleMessageOpenedApp(RemoteMessage message) {
     dev.log('알림 탭으로 앱 열림: ${message.notification?.title}');
     _addNotification(message, isRead: true);
+    fetchUnreadCount();
   }
 
   void _addNotification(RemoteMessage message, {bool isRead = false}) {
@@ -162,17 +168,45 @@ class FcmService {
 
   Future<void> fetchUnreadCount() async {
     final user = AuthService().currentUser;
-    if (user == null) return;
+    if (user == null) {
+      dev.log('fetchUnreadCount: user is null, skip');
+      return;
+    }
     try {
+      dev.log('fetchUnreadCount: user_id=${user.userId}, company_key=${user.companyKey}, app_type=FINANCE');
       final data = await ApiService.get(
         ApiConfig.fcmLogUnreadCount,
         params: {
+          'company_key': user.companyKey,
           'user_id': user.userId,
           'app_type': 'FINANCE',
         },
       );
+      dev.log('fetchUnreadCount 응답: $data');
       if (data['resultCode'] == '200') {
-        unreadCount.value = (data['res'] as int?) ?? 0;
+        final count = (data['res'] as int?) ?? 0;
+        unreadCount.value = count;
+        dev.log('fetchUnreadCount: unreadCount=$count');
+        _updateAppBadge(count);
+      }
+    } catch (e) {
+      dev.log('fetchUnreadCount 에러: $e');
+    }
+  }
+
+  void _updateAppBadge(int count) {
+    try {
+      if (count > 0) {
+        _messaging.setAutoInitEnabled(true);
+      }
+      // iOS에서는 서버 push의 badge 필드로 자동 처리됨
+      // 앱 내에서 직접 뱃지를 리셋하려면 아래 호출
+      if (count == 0) {
+        _messaging.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
       }
     } catch (_) {}
   }
@@ -193,6 +227,7 @@ class FcmService {
       await ApiService.put(
         ApiConfig.fcmLogReadAll,
         params: {
+          'company_key': user.companyKey,
           'user_id': user.userId,
           'app_type': 'FINANCE',
         },

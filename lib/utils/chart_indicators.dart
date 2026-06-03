@@ -2,6 +2,40 @@ import 'dart:math';
 
 import '../models/stock_model.dart';
 
+// ─── 볼린저밴드 ───
+
+class BollingerBands {
+  final List<double?> upper;
+  final List<double?> middle;
+  final List<double?> lower;
+
+  BollingerBands({required this.upper, required this.middle, required this.lower});
+}
+
+BollingerBands calcBollinger(List<double?> closes, {int period = 20, double multiplier = 2}) {
+  final n = closes.length;
+  final upper = List<double?>.filled(n, null);
+  final middle = List<double?>.filled(n, null);
+  final lower = List<double?>.filled(n, null);
+
+  if (n < period) return BollingerBands(upper: upper, middle: middle, lower: lower);
+
+  for (var i = period - 1; i < n; i++) {
+    final slice = closes.sublist(i - period + 1, i + 1).whereType<double>().toList();
+    if (slice.length < period) continue;
+
+    final avg = slice.reduce((a, b) => a + b) / slice.length;
+    final variance = slice.map((v) => (v - avg) * (v - avg)).reduce((a, b) => a + b) / slice.length;
+    final stdDev = sqrt(variance);
+
+    middle[i] = avg;
+    upper[i] = avg + multiplier * stdDev;
+    lower[i] = avg - multiplier * stdDev;
+  }
+
+  return BollingerBands(upper: upper, middle: middle, lower: lower);
+}
+
 // ─── 피보나치 되돌림 ───
 
 class FibLevel {
