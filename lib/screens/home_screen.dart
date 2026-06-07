@@ -26,6 +26,16 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Design Ref: §4.3 — 종료 상태 푸시 탭으로 보류된 상세를 홈 마운트 후 진입
+    // Plan SC: SC-06
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FcmService().flushPendingDetail();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
 

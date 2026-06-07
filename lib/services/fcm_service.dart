@@ -7,7 +7,9 @@ import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../config/api_config.dart';
+import '../models/notification_detail.dart';
 import '../models/notification_model.dart';
+import '../screens/notification_detail_screen.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
 
@@ -25,6 +27,9 @@ class FcmService {
   bool _pushEnabled = true;
 
   GlobalKey<NavigatorState>? navigatorKey;
+
+  // Design Ref: §4.2 — 콜드스타트(앱 종료 상태) 푸시 탭 시 navigatorKey 준비 전 보존
+  NotificationDetail? _pendingDetail;
 
   Future<void> initialize() async {
     final settings = await _messaging.requestPermission(
@@ -71,9 +76,39 @@ class FcmService {
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpenedApp);
 
+    // Plan SC: SC-06 — 종료 상태에서 푸시 탭 시 앱 시작 후 상세 진입 (홈 마운트 후 flush)
     final initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
       _addNotification(initialMessage, isRead: true);
+      _pendingDetail = NotificationDetail.fromMessage(initialMessage);
+    }
+  }
+
+  // Design Ref: §4.2 — 상세 진입 + 읽음 처리. navigatorKey 미준비 시 보류
+  void _openDetail(NotificationDetail detail) {
+    final nav = navigatorKey?.currentState;
+    if (nav == null) {
+      _pendingDetail = detail;
+      return;
+    }
+    nav.push(
+      MaterialPageRoute(
+        builder: (_) => NotificationDetailScreen(detail: detail),
+      ),
+    );
+    // Plan SC: SC-07 — 진입 시 읽음 처리 + 미읽음/뱃지 동기화
+    if (detail.seq != null) {
+      markLogAsRead(detail.seq!);
+      fetchUnreadCount();
+    }
+  }
+
+  // 앱이 로그인/홈까지 준비된 뒤 호출 (HomeScreen initState)
+  void flushPendingDetail() {
+    final d = _pendingDetail;
+    if (d != null) {
+      _pendingDetail = null;
+      _openDetail(d);
     }
   }
 
@@ -89,10 +124,13 @@ class FcmService {
     fetchUnreadCount();
   }
 
+  // Plan SC: SC-05 — 백그라운드 상태 푸시 탭 시 상세 페이지로 자동 진입
   void _handleMessageOpenedApp(RemoteMessage message) {
     dev.log('알림 탭으로 앱 열림: ${message.notification?.title}');
+    dev.log('알림 탭 data: ${message.data}'); // V-01: seq 포함 여부 검증용
     _addNotification(message, isRead: true);
     fetchUnreadCount();
+    _openDetail(NotificationDetail.fromMessage(message));
   }
 
   void _addNotification(RemoteMessage message, {bool isRead = false}) {
@@ -133,10 +171,11 @@ class FcmService {
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
+          // Plan SC: SC-04 — 포그라운드 스낵바 '보기' 탭 시 상세 페이지로 이동
           label: '보기',
           textColor: Colors.white,
           onPressed: () {
-            navigatorKey?.currentState?.pushNamed('/notifications');
+            _openDetail(NotificationDetail.fromMessage(message));
           },
         ),
       ),

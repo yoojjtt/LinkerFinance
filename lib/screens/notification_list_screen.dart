@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../config/api_config.dart';
+import '../models/notification_detail.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
+import 'notification_detail_screen.dart';
 
 class NotificationListScreen extends StatefulWidget {
   const NotificationListScreen({super.key});
@@ -312,56 +314,14 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
     );
   }
 
+  // Design Ref: §4.1 — 보텀시트 제거, 전체 화면 상세 페이지로 이동
+  // Plan SC: SC-02 — 목록 탭 시 상세 페이지로 이동
   void _showDetail(Map<String, dynamic> log) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.5,
-        maxChildSize: 0.9,
-        minChildSize: 0.3,
-        builder: (context, scrollController) => SingleChildScrollView(
-          controller: scrollController,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                log['title'] as String? ?? '알림',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1B2E5C),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _formatTime(log['create_DT'] as String? ?? ''),
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                log['body'] as String? ?? '',
-                style: const TextStyle(fontSize: 15, height: 1.5),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NotificationDetailScreen(
+          detail: NotificationDetail.fromLog(log),
         ),
       ),
     );
