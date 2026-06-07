@@ -42,4 +42,8 @@ class ApiConfig {
   // 종목 차트/검색
   static const String stockChart = '/api/IV/quant/screener/stock'; // /{code}?days=
   static const String stockSearch = '/api/IV/kiwoom/stock/search'; // ?keyword=
+
+  // AI 모니터 알림 (전체 내용 = ai_commentary)
+  static const String monitorAlerts =
+      '/api/IV/monitor/alerts'; // /{id}?companyKey=&userId=
 }
