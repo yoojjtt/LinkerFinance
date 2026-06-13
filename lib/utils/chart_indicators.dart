@@ -266,3 +266,103 @@ double trendPriceAt(SwingPoint p1, SwingPoint p2, int index) {
   final slope = (p2.price - p1.price) / (p2.index - p1.index);
   return p1.price + slope * (index - p1.index);
 }
+
+// ─── RSI (Relative Strength Index) ───
+
+List<double?> calcRSI(List<double> closes, {int period = 14}) {
+  final n = closes.length;
+  final result = List<double?>.filled(n, null);
+  if (n < period + 1) return result;
+
+  // 초기 평균 상승/하락
+  var avgGain = 0.0;
+  var avgLoss = 0.0;
+  for (var i = 1; i <= period; i++) {
+    final diff = closes[i] - closes[i - 1];
+    if (diff > 0) avgGain += diff;
+    if (diff < 0) avgLoss += diff.abs();
+  }
+  avgGain /= period;
+  avgLoss /= period;
+
+  result[period] = avgLoss == 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
+
+  // Wilder smoothing
+  for (var i = period + 1; i < n; i++) {
+    final diff = closes[i] - closes[i - 1];
+    final gain = diff > 0 ? diff : 0.0;
+    final loss = diff < 0 ? diff.abs() : 0.0;
+    avgGain = (avgGain * (period - 1) + gain) / period;
+    avgLoss = (avgLoss * (period - 1) + loss) / period;
+    result[i] = avgLoss == 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
+  }
+
+  return result;
+}
+
+// ─── MACD ───
+
+class MACDData {
+  final List<double?> macdLine;    // MACD = EMA12 - EMA26
+  final List<double?> signalLine;  // Signal = EMA9(MACD)
+  final List<double?> histogram;   // MACD - Signal
+
+  MACDData({required this.macdLine, required this.signalLine, required this.histogram});
+}
+
+List<double?> _calcEMA(List<double> data, int period) {
+  final n = data.length;
+  final result = List<double?>.filled(n, null);
+  if (n < period) return result;
+
+  // 첫 EMA = SMA
+  var sum = 0.0;
+  for (var i = 0; i < period; i++) sum += data[i];
+  result[period - 1] = sum / period;
+
+  final multiplier = 2.0 / (period + 1);
+  for (var i = period; i < n; i++) {
+    result[i] = (data[i] - result[i - 1]!) * multiplier + result[i - 1]!;
+  }
+  return result;
+}
+
+MACDData calcMACD(List<double> closes, {int fast = 12, int slow = 26, int signal = 9}) {
+  final n = closes.length;
+  final emaFast = _calcEMA(closes, fast);
+  final emaSlow = _calcEMA(closes, slow);
+
+  // MACD line
+  final macdLine = List<double?>.filled(n, null);
+  for (var i = 0; i < n; i++) {
+    if (emaFast[i] != null && emaSlow[i] != null) {
+      macdLine[i] = emaFast[i]! - emaSlow[i]!;
+    }
+  }
+
+  // Signal line (EMA of MACD)
+  final macdValues = <double>[];
+  final macdIndices = <int>[];
+  for (var i = 0; i < n; i++) {
+    if (macdLine[i] != null) {
+      macdValues.add(macdLine[i]!);
+      macdIndices.add(i);
+    }
+  }
+
+  final signalLine = List<double?>.filled(n, null);
+  final histogram = List<double?>.filled(n, null);
+
+  if (macdValues.length >= signal) {
+    final sigEma = _calcEMA(macdValues, signal);
+    for (var j = 0; j < macdValues.length; j++) {
+      final i = macdIndices[j];
+      if (sigEma[j] != null) {
+        signalLine[i] = sigEma[j];
+        histogram[i] = macdLine[i]! - sigEma[j]!;
+      }
+    }
+  }
+
+  return MACDData(macdLine: macdLine, signalLine: signalLine, histogram: histogram);
+}

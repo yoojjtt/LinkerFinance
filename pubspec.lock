@@ -89,14 +89,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.9"
-  equatable:
-    dependency: transitive
-    description:
-      name: equatable
-      sha256: "3e0141505477fd8ad55d6eb4e7776d3fe8430be8e497ccb1521370c3f21a3e2b"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.8"
   fake_async:
     dependency: transitive
     description:
@@ -161,14 +153,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.7"
-  fl_chart:
-    dependency: "direct main"
-    description:
-      name: fl_chart
-      sha256: "5276944c6ffc975ae796569a826c38a62d2abcf264e26b88fa6f482e107f4237"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.70.2"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -280,14 +264,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.8.0"
-  interactive_chart:
-    dependency: "direct main"
-    description:
-      name: interactive_chart
-      sha256: fe72d3b3bf0482978d7aa483e0e78cab605217ffcabd0b0b0d530f3cb673d324
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.6"
   intl:
     dependency: "direct main"
     description:
@@ -312,14 +288,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.12.0"
-  k_chart:
-    dependency: "direct main"
-    description:
-      name: k_chart
-      sha256: "059163563285cc001dc0257880f598774c63791155a7e0f3a37064dda89c9168"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.7.1"
   leak_tracker:
     dependency: transitive
     description:
@@ -501,6 +469,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
+  syncfusion_flutter_charts:
+    dependency: "direct main"
+    description:
+      name: syncfusion_flutter_charts
+      sha256: "9565d7607e516997fac3570e1fbc7e8d4723141017add79341236857afd11f1b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "33.2.12"
+  syncfusion_flutter_core:
+    dependency: transitive
+    description:
+      name: syncfusion_flutter_core
+      sha256: "788020307d273fed25c2c8cb860d6e2fbe5cac18abb96819e66ca4e354c6a312"
+      url: "https://pub.dev"
+    source: hosted
+    version: "33.2.12"
   term_glyph:
     dependency: transitive
     description:
@@ -583,4 +567,4 @@ packages:
     version: "3.1.3"
 sdks:
   dart: ">=3.10.0-0 <4.0.0"
-  flutter: ">=3.35.0"
+  flutter: ">=3.35.1"

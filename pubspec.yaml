@@ -38,10 +38,8 @@ dependencies:
   flutter_secure_storage: ^9.2.0
   firebase_core: ^4.9.0
   firebase_messaging: ^16.2.2
-  fl_chart: ^0.70.2
+  syncfusion_flutter_charts: ^33.1.0
   intl: ^0.20.2
-  k_chart: ^0.7.1
-  interactive_chart: ^0.3.6
   flutter_app_badger: ^1.5.0
 
 dev_dependencies:

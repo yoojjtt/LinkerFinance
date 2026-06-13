@@ -1,5 +1,6 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 import '../../models/macro_asset_model.dart';
 import '../../services/macro_service.dart';
@@ -23,10 +24,16 @@ class _AssetHistoryChartState extends State<AssetHistoryChart> {
   String _period = '1m';
   List<MacroHistory> _history = [];
   bool _isLoading = true;
+  late ZoomPanBehavior _zoomPanBehavior;
 
   @override
   void initState() {
     super.initState();
+    _zoomPanBehavior = ZoomPanBehavior(
+      enablePanning: true,
+      enablePinching: true,
+      zoomMode: ZoomMode.x,
+    );
     _loadHistory();
   }
 
@@ -112,7 +119,7 @@ class _AssetHistoryChartState extends State<AssetHistoryChart> {
 
           // 차트
           SizedBox(
-            height: 180,
+            height: 250,
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
                 : _history.isEmpty
@@ -131,46 +138,125 @@ class _AssetHistoryChartState extends State<AssetHistoryChart> {
   }
 
   Widget _buildChart() {
-    final spots = _history.asMap().entries.map((e) {
-      return FlSpot(e.key.toDouble(), e.value.close);
-    }).toList();
+    final currentPrice = _history.last.close;
 
-    final minY = _history.map((h) => h.close).reduce((a, b) => a < b ? a : b);
-    final maxY = _history.map((h) => h.close).reduce((a, b) => a > b ? a : b);
-    final padding = (maxY - minY) * 0.1;
+    // 미래 여백: X축 max를 데이터 끝 + 20% 확장
+    final lastDate = _history.last.date;
+    final firstDate = _history.first.date;
+    final totalDuration = lastDate.difference(firstDate);
+    final futureMargin = Duration(milliseconds: (totalDuration.inMilliseconds * 0.2).toInt());
+    final maxDate = lastDate.add(futureMargin);
 
-    return LineChart(
-      LineChartData(
-        gridData: const FlGridData(show: false),
-        titlesData: const FlTitlesData(show: false),
-        borderData: FlBorderData(show: false),
-        minY: minY - padding,
-        maxY: maxY + padding,
-        lineTouchData: LineTouchData(
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipItems: (spots) => spots.map((s) {
-              return LineTooltipItem(
-                formatPrice(s.y, widget.symbol),
-                const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
-              );
-            }).toList(),
-          ),
-        ),
-        lineBarsData: [
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: const Color(0xFF1B2E5C),
-            barWidth: 2,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              color: const Color(0xFF1B2E5C).withValues(alpha: 0.1),
-            ),
+    return SfCartesianChart(
+      zoomPanBehavior: _zoomPanBehavior,
+      plotAreaBorderWidth: 0,
+
+      // X축: 날짜
+      primaryXAxis: DateTimeAxis(
+        dateFormat: _xAxisDateFormat(),
+        majorGridLines: const MajorGridLines(width: 0),
+        axisLine: const AxisLine(width: 0.5, color: Color(0xFFE0E0E0)),
+        labelStyle: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+        maximum: maxDate,
+        edgeLabelPlacement: EdgeLabelPlacement.shift,
+      ),
+
+      // Y축: 가격 (오른쪽 표시)
+      primaryYAxis: NumericAxis(
+        opposedPosition: true,
+        numberFormat: _yAxisNumberFormat(),
+        majorGridLines: MajorGridLines(width: 0.5, color: Colors.grey.shade200),
+        axisLine: const AxisLine(width: 0),
+        labelStyle: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+        // 현재가 마커 라인 (보라색 점선)
+        plotBands: [
+          PlotBand(
+            start: currentPrice,
+            end: currentPrice,
+            borderWidth: 1.2,
+            borderColor: const Color(0xFF7C4DFF),
+            dashArray: const <double>[4, 3],
+            color: Colors.transparent,
           ),
         ],
       ),
+
+      // 현재가 Y축 태그
+      annotations: <CartesianChartAnnotation>[
+        CartesianChartAnnotation(
+          widget: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7C4DFF),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text(
+              _formatAxisPrice(currentPrice),
+              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white),
+            ),
+          ),
+          coordinateUnit: CoordinateUnit.point,
+          region: AnnotationRegion.chart,
+          x: maxDate,
+          y: currentPrice,
+        ),
+      ],
+
+      // 크로스헤어 (터치 시 값 표시)
+      crosshairBehavior: CrosshairBehavior(
+        enable: true,
+        activationMode: ActivationMode.singleTap,
+        lineType: CrosshairLineType.vertical,
+        lineDashArray: const <double>[4, 3],
+      ),
+
+      // 툴팁
+      tooltipBehavior: TooltipBehavior(
+        enable: true,
+        header: '',
+        format: 'point.x\npoint.y',
+      ),
+
+      series: <CartesianSeries>[
+        // 영역 채우기
+        AreaSeries<MacroHistory, DateTime>(
+          dataSource: _history,
+          xValueMapper: (h, _) => h.date,
+          yValueMapper: (h, _) => h.close,
+          color: const Color(0xFF1B2E5C).withValues(alpha: 0.08),
+          borderColor: const Color(0xFF1B2E5C),
+          borderWidth: 2,
+        ),
+      ],
     );
+  }
+
+  DateFormat _xAxisDateFormat() {
+    return switch (_period) {
+      '1w' => DateFormat('M/d'),
+      '1m' => DateFormat('M/d'),
+      '3m' => DateFormat('M/d'),
+      '6m' => DateFormat('yy/M'),
+      '1y' => DateFormat('yy/M'),
+      _ => DateFormat('M/d'),
+    };
+  }
+
+  NumberFormat _yAxisNumberFormat() {
+    if (['US10Y', 'US2Y'].contains(widget.symbol)) {
+      return NumberFormat('#,##0.000');
+    }
+    if (['KOSPI', 'KOSDAQ'].contains(widget.symbol)) {
+      return NumberFormat('#,##0.00');
+    }
+    if (['USDKRW'].contains(widget.symbol)) {
+      return NumberFormat('#,##0');
+    }
+    return NumberFormat('#,##0.00');
+  }
+
+  String _formatAxisPrice(double price) {
+    return formatPrice(price, widget.symbol);
   }
 
   Widget _buildStats() {
