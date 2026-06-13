@@ -1,3 +1,5 @@
+import '../utils/macro_utils.dart' show symbolCategoryMap;
+
 class MacroAsset {
   final String symbol;
   final String name;
@@ -24,11 +26,15 @@ class MacroAsset {
     final prevClose = (json['prev_close'] as num?)?.toDouble() ?? closePrice;
     final changeRate = (json['change_rate'] ?? json['changePercent'] as num?)?.toDouble() ?? 0;
     final change = (json['change'] as num?)?.toDouble() ?? (closePrice - prevClose);
+    final symbol = json['symbol'] as String? ?? '';
+    final apiCategory = json['category'] as String? ?? '';
 
     return MacroAsset(
-      symbol: json['symbol'] as String? ?? '',
+      symbol: symbol,
       name: json['name'] as String? ?? '',
-      category: json['category'] as String? ?? '',
+      category: apiCategory.isNotEmpty
+          ? apiCategory
+          : (symbolCategoryMap[symbol] ?? 'etc'),
       price: closePrice,
       change: change,
       changePercent: changeRate,

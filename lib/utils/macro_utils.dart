@@ -225,3 +225,16 @@ const List<String> categoryLabels = [
   '전체', '지수', '선물', '환율', '채권',
   '변동성', '암호화폐', '원자재', '투자심리',
 ];
+
+/// 심볼 → 카테고리 매핑 (API 응답에 category 없을 때 fallback)
+const Map<String, String> symbolCategoryMap = {
+  'KOSPI': 'index', 'KOSDAQ': 'index', 'SP500': 'index', 'NDX100': 'index',
+  'ES': 'futures', 'NQ': 'futures', 'YM': 'futures', 'RTY': 'futures',
+  'USDKRW': 'currency', 'USDJPY': 'currency', 'EURUSD': 'currency',
+  'US2Y': 'bond', 'US10Y': 'bond',
+  'VIX': 'volatility',
+  'BTC': 'crypto',
+  'GOLD': 'commodity', 'SILVER': 'commodity', 'WTI': 'commodity',
+  'BRENT': 'commodity', 'NATGAS': 'commodity', 'COPPER': 'commodity', 'NICKEL': 'commodity',
+  'DEPOSIT': 'sentiment', 'CREDIT': 'sentiment',
+};
