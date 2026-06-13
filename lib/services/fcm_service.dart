@@ -96,10 +96,10 @@ class FcmService {
         builder: (_) => NotificationDetailScreen(detail: detail),
       ),
     );
-    // Plan SC: SC-07 — 진입 시 읽음 처리 + 미읽음/뱃지 동기화
+    // Plan SC: SC-04 — 읽음 PUT 완료(await) 후 카운트 조회 (경합 제거)
+    // Design Ref: §5.2
     if (detail.seq != null) {
-      markLogAsRead(detail.seq!);
-      fetchUnreadCount();
+      markLogAsRead(detail.seq!).then((_) => fetchUnreadCount());
     }
   }
 
@@ -143,7 +143,8 @@ class FcmService {
       isRead: isRead,
     );
     notifications.insert(0, notification);
-    _updateUnreadCount();
+    // Design Ref: §5.4 — 안읽음 수 단일 진실은 서버(fetchUnreadCount). 인메모리 리스트는 표시용.
+    // (호출부에서 fetchUnreadCount()로 동기화 → 깜빡임 방지, Plan SC: SC-07)
   }
 
   void _showInAppNotification(RemoteMessage message) {
@@ -182,29 +183,8 @@ class FcmService {
     );
   }
 
-  void markAsRead(String id) {
-    final notification = notifications.where((n) => n.id == id).firstOrNull;
-    if (notification != null) {
-      notification.isRead = true;
-      _updateUnreadCount();
-    }
-  }
-
-  void markAllAsRead() {
-    for (final n in notifications) {
-      n.isRead = true;
-    }
-    _updateUnreadCount();
-  }
-
-  void deleteNotification(String id) {
-    notifications.removeWhere((n) => n.id == id);
-    _updateUnreadCount();
-  }
-
-  void _updateUnreadCount() {
-    unreadCount.value = notifications.where((n) => !n.isRead).length;
-  }
+  // Design Ref: §5.4 — 안읽음 수 단일 진실은 서버(fetchUnreadCount).
+  // 인메모리 리스트 기반 카운트 메서드는 제거(미사용 + 서버값과 충돌 방지).
 
   Future<void> fetchUnreadCount() async {
     final user = AuthService().currentUser;
@@ -269,7 +249,9 @@ class FcmService {
           'app_type': 'FINANCE',
         },
       );
+      // Design Ref: §5.1 — Plan SC: SC-03, 모두읽음 즉시 OS 아이콘 뱃지 제거
       unreadCount.value = 0;
+      _updateAppBadge(0);
     } catch (_) {}
   }
 
