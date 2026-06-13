@@ -46,4 +46,16 @@ class ApiConfig {
   // AI 모니터 알림 (전체 내용 = ai_commentary)
   static const String monitorAlerts =
       '/api/IV/monitor/alerts'; // /{id}?companyKey=&userId=
+
+  // 시장일지
+  static const String journal = '/api/IV/journal';
+
+  // 심리 (투자 원칙 + 체크리스트)
+  static const String psych = '/api/IV/psych';
+
+  // 매매기법
+  static const String strategy = '/api/IV/strategy';
+
+  // 일정관리
+  static const String events = '/api/IV/quant/events';
 }

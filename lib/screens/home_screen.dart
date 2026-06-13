@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
 import 'macro/macro_dashboard_screen.dart';
 import 'my_info/my_info_screen.dart';
+import 'note/note_screen.dart';
 import 'notification_list_screen.dart';
 import 'stock/stock_search_screen.dart';
 import 'watchlist/watchlist_screen.dart';
@@ -22,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _pages = const [
     MacroDashboardScreen(),
     WatchlistScreen(),
+    NoteScreen(),
     MyInfoScreen(),
   ];
 
@@ -134,6 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
         unselectedItemColor: Colors.grey.shade400,
         backgroundColor: Colors.white,
         elevation: 8,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -144,6 +147,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.star_outline),
             activeIcon: Icon(Icons.star),
             label: '관심종목',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.edit_note_outlined),
+            activeIcon: Icon(Icons.edit_note),
+            label: '노트',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
