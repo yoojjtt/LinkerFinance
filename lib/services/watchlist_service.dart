@@ -64,6 +64,13 @@ class WatchlistService {
         final map = _getData(data) as Map<String, dynamic>;
         return map.map((code, val) {
           if (val is Map) {
+            // 서버 응답: {past_price, current_price, return_rate}
+            // → period 키로 매핑: {period: return_rate}
+            final returnRate = (val['return_rate'] as num?)?.toDouble();
+            if (returnRate != null) {
+              return MapEntry(code, {period: returnRate});
+            }
+            // fallback: 기존 {period: rate} 구조 호환
             return MapEntry(
               code,
               val.map((k, v) => MapEntry(k as String, (v as num).toDouble())),
