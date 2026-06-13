@@ -17,6 +17,8 @@ class _JournalTabState extends State<JournalTab> {
   bool _isLoading = true;
   String? _typeFilter;
   int _page = 1;
+  bool _isSearchMode = false;
+  final _searchCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -50,6 +52,13 @@ class _JournalTabState extends State<JournalTab> {
     }
   }
 
+  Future<void> _doSearch(String keyword) async {
+    if (keyword.trim().isEmpty) { _loadData(); return; }
+    setState(() => _isLoading = true);
+    _journals = await JournalService.search(keyword: keyword.trim());
+    if (mounted) setState(() => _isLoading = false);
+  }
+
   void _openForm({MarketJournal? edit}) async {
     final result = await Navigator.push<bool>(
       context,
@@ -75,6 +84,10 @@ class _JournalTabState extends State<JournalTab> {
                 slivers: [
                   // 통계 카드
                   if (_streak != null) SliverToBoxAdapter(child: _buildStreakCard()),
+
+                  // 검색바
+                  if (_isSearchMode)
+                    SliverToBoxAdapter(child: _buildSearchBar()),
 
                   // 타입 필터
                   SliverToBoxAdapter(child: _buildTypeFilter()),
@@ -132,13 +145,37 @@ class _JournalTabState extends State<JournalTab> {
     ]);
   }
 
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: TextField(
+        controller: _searchCtrl,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: '제목, 내용, 태그 검색',
+          prefixIcon: const Icon(Icons.search, size: 20),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            onPressed: () { _searchCtrl.clear(); setState(() => _isSearchMode = false); _loadData(); },
+          ),
+          filled: true, fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+        ),
+        style: const TextStyle(fontSize: 14),
+        onSubmitted: _doSearch,
+      ),
+    );
+  }
+
   Widget _buildTypeFilter() {
     const types = [null, 'DAILY', 'EVENT', 'CONCEPT'];
     const labels = ['전체', '일간', '이벤트', '컨셉'];
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Row(
-        children: List.generate(types.length, (i) {
+        children: [
+          ...List.generate(types.length, (i) {
           final selected = _typeFilter == types[i];
           return Padding(
             padding: const EdgeInsets.only(right: 6),
@@ -159,6 +196,12 @@ class _JournalTabState extends State<JournalTab> {
             ),
           );
         }),
+          const Spacer(),
+          GestureDetector(
+            onTap: () => setState(() => _isSearchMode = !_isSearchMode),
+            child: Icon(Icons.search, size: 20, color: _isSearchMode ? const Color(0xFF1B2E5C) : Colors.grey.shade400),
+          ),
+        ],
       ),
     );
   }

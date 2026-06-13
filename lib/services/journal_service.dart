@@ -120,4 +120,15 @@ class JournalService {
     } catch (_) {}
     return null;
   }
+
+  static Future<Map<String, dynamic>?> getAiReport({String? month, bool regenerate = false}) async {
+    try {
+      final params = {'company_key': _ck, 'user_id': _uid};
+      if (month != null) params['month'] = month;
+      if (regenerate) params['regenerate'] = 'true';
+      final d = await ApiService.get('${ApiConfig.journal}/ai-report', params: params);
+      if (_ok(d) && _data(d) is Map) return _data(d) as Map<String, dynamic>;
+    } catch (_) {}
+    return null;
+  }
 }

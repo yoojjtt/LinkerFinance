@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../models/event_model.dart';
 import '../../../services/event_service.dart';
 import 'event_form.dart';
+import 'event_result_form.dart';
 
 class CalendarTab extends StatefulWidget {
   const CalendarTab({super.key});
@@ -252,14 +253,26 @@ class _CalendarTabState extends State<CalendarTab> {
                     const SizedBox(height: 4),
                     Text(e.description!, style: TextStyle(fontSize: 12, color: Colors.grey.shade600), maxLines: 2, overflow: TextOverflow.ellipsis),
                   ],
-                  if (e.completed) ...[
-                    const SizedBox(height: 4),
+                  const SizedBox(height: 6),
+                  if (e.completed)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(color: const Color(0xFF22C55E).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                       child: const Text('복기 완료', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFF22C55E))),
+                    )
+                  else if (e.id != null)
+                    GestureDetector(
+                      onTap: () async {
+                        final result = await Navigator.push<bool>(context,
+                          MaterialPageRoute(builder: (_) => EventResultForm(event: e)));
+                        if (result == true) _loadEvents();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: const Color(0xFFF59E0B).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                        child: const Text('복기하기', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFFF59E0B))),
+                      ),
                     ),
-                  ],
                 ]),
               ),
             );
