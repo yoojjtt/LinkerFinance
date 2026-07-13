@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -13,12 +15,18 @@ class WatchlistScreen extends StatefulWidget {
   State<WatchlistScreen> createState() => _WatchlistScreenState();
 }
 
-class _WatchlistScreenState extends State<WatchlistScreen> {
+// Design Ref: §6 — 관심종목 1분 자동 갱신 + AppLifecycle
+class _WatchlistScreenState extends State<WatchlistScreen>
+    with WidgetsBindingObserver {
   List<WatchlistGroup> _groups = [];
   List<WatchlistStock> _stocks = [];
   bool _isLoading = true;
   int? _activeGroupId; // null = 전체
   String _activePeriod = '1m';
+
+  // Plan SC: SC-01 — 1분 자동 갱신
+  Timer? _autoRefreshTimer;
+  bool _isAutoRefreshing = false;
 
   static const _periods = ['1w', '1m', '6m', '1y'];
   static const _periodLabels = ['1주', '1개월', '6개월', '1년'];
@@ -26,7 +34,71 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadData();
+    _startAutoRefresh();
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Plan SC: SC-05 — 백그라운드 → 포그라운드 복원
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _autoRefreshTimer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      _loadData();
+      _startAutoRefresh();
+    }
+  }
+
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _silentRefresh(),
+    );
+  }
+
+  Future<void> _silentRefresh() async {
+    if (_isAutoRefreshing) return;
+    _isAutoRefreshing = true;
+
+    try {
+      final results = await Future.wait([
+        WatchlistService.getGroups(),
+        WatchlistService.getStocks(groupId: _activeGroupId),
+      ]);
+
+      final groups = results[0] as List<WatchlistGroup>;
+      final stocks = results[1] as List<WatchlistStock>;
+
+      if (stocks.isNotEmpty) {
+        final codes = stocks.map((s) => s.stockCode).toList();
+        final returns = await WatchlistService.getReturns(codes, period: _activePeriod);
+        for (final stock in stocks) {
+          if (returns.containsKey(stock.stockCode)) {
+            stock.returns = returns[stock.stockCode]!;
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _groups = groups;
+          _stocks = stocks;
+        });
+      }
+    } catch (_) {
+      // 조용히 스킵 — 다음 주기에 재시도
+    }
+
+    _isAutoRefreshing = false;
   }
 
   Future<void> _loadData() async {
@@ -224,13 +296,29 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
           BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          _summaryItem('평균수익률', '${avg >= 0 ? "+" : ""}${avg.toStringAsFixed(2)}%', getChangeColor(avg)),
-          _divider(),
-          _summaryItem('종목수', '${stocks.length}', const Color(0xFF1B2E5C)),
-          _divider(),
-          _summaryItem('상승/하락', '$upCount / $downCount', const Color(0xFF6B6B6B)),
+          Row(
+            children: [
+              _summaryItem('평균수익률', '${avg >= 0 ? "+" : ""}${avg.toStringAsFixed(2)}%', getChangeColor(avg)),
+              _divider(),
+              _summaryItem('종목수', '${stocks.length}', const Color(0xFF1B2E5C)),
+              _divider(),
+              _summaryItem('상승/하락', '$upCount / $downCount', const Color(0xFF6B6B6B)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.autorenew, size: 12, color: Colors.grey.shade400),
+              const SizedBox(width: 4),
+              Text(
+                '1분마다 자동갱신',
+                style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+              ),
+            ],
+          ),
         ],
       ),
     );

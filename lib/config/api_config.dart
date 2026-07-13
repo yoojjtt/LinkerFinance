@@ -59,6 +59,9 @@ class ApiConfig {
   // 일정관리
   static const String events = '/api/IV/quant/events';
 
+  // Design Ref: §7 — 키움 스트림
+  static const String streamConnect = '/api/IV/quant/screener/streamConnect';
+
   // Design Ref: §4.1 — 스캐너 + 투자자 수급 신규 엔드포인트
   static const String scannerResults = '/api/IV/scanner/results';
   static const String investorSectorFlow = '/api/IV/quant/investor/sector-flow';

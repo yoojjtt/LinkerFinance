@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
+import '../../models/realtime_price_model.dart';
 import '../../models/stock_model.dart';
 import '../../services/stock_service.dart';
+import '../../services/stomp_service.dart';
 import '../../utils/chart_indicators.dart';
 import '../../utils/macro_utils.dart';
 
@@ -53,6 +57,13 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
   MACDData? _macdData;
   List<TrendLine> _trendLines = [];
 
+  // Design Ref: §5 — 실시간 모니터링 상태
+  bool _isRealtimeOn = false;
+  RealtimePrice? _realtimePrice;
+  Timer? _blinkTimer;
+  bool _blinkVisible = true;
+  bool _priceHighlight = false;
+
   // 차트 간 줌/스크롤 동기화 (axisController 방식)
   DateTimeAxisController? _mainAxisCtrl;
   final List<DateTimeAxisController> _subAxisCtrls = [];
@@ -75,6 +86,81 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
   void initState() {
     super.initState();
     _loadChart();
+  }
+
+  @override
+  void dispose() {
+    _stopRealtime();
+    super.dispose();
+  }
+
+  // Plan SC: SC-02, SC-03 — 실시간 토글 ON/OFF
+  void _toggleRealtime() async {
+    if (_isRealtimeOn) {
+      _stopRealtime();
+    } else {
+      setState(() => _isRealtimeOn = true);
+      final connected = await StompService().connect();
+      if (!connected) {
+        if (mounted) {
+          setState(() => _isRealtimeOn = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('실시간 연결에 실패했습니다'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+      // Gap Fix #2: 최대 재시도 초과 시 토글 자동 OFF
+      StompService().onMaxRetriesReached = () {
+        if (mounted) {
+          _stopRealtime();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('실시간 연결이 끊어졌습니다'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      };
+      StompService().subscribe(widget.stockCode, _onRealtimePrice);
+      _startBlink();
+    }
+  }
+
+  void _stopRealtime() {
+    _blinkTimer?.cancel();
+    _blinkTimer = null;
+    if (_isRealtimeOn) {
+      StompService().unsubscribe(widget.stockCode);
+    }
+    if (mounted) {
+      setState(() {
+        _isRealtimeOn = false;
+        _realtimePrice = null;
+      });
+    }
+  }
+
+  void _onRealtimePrice(RealtimePrice price) {
+    if (!mounted) return;
+    setState(() {
+      _realtimePrice = price;
+      _priceHighlight = true;
+    });
+    // 하이라이트 200ms 후 해제
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) setState(() => _priceHighlight = false);
+    });
+  }
+
+  void _startBlink() {
+    _blinkTimer?.cancel();
+    _blinkTimer = Timer.periodic(const Duration(milliseconds: 800), (_) {
+      if (mounted) setState(() => _blinkVisible = !_blinkVisible);
+    });
   }
 
   /// 메인 차트 줌/팬 → 서브 차트에 동기화
@@ -173,8 +259,10 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final priceFormat = NumberFormat('#,##0');
-    final price = widget.currentPrice ?? (_rawCandles.isNotEmpty ? _rawCandles.last.close : 0);
-    final change = widget.changeRate ?? (_rawCandles.isNotEmpty ? _rawCandles.last.changeRate : 0);
+    // 실시간 데이터 우선, 없으면 기존 정적 데이터
+    final price = _realtimePrice?.curPrice ?? widget.currentPrice ?? (_rawCandles.isNotEmpty ? _rawCandles.last.close : 0);
+    final change = _realtimePrice?.diffRate ?? widget.changeRate ?? (_rawCandles.isNotEmpty ? _rawCandles.last.changeRate : 0);
+    final volume = _realtimePrice?.cumVolume;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -190,18 +278,67 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
           Text(widget.stockCode, style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
         ]),
         actions: [
+          // Design Ref: §5.1 — 실시간 가격 + 토글
           Padding(
             padding: const EdgeInsets.only(right: 4),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text('${priceFormat.format(price)}원',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF1B2E5C))),
-                Text('${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)}%',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: getChangeColor(change))),
-              ],
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: _priceHighlight
+                    ? (change >= 0 ? const Color(0xFFD32F2F).withValues(alpha: 0.08) : const Color(0xFF1976D2).withValues(alpha: 0.08))
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isRealtimeOn)
+                        AnimatedOpacity(
+                          opacity: _blinkVisible ? 1.0 : 0.3,
+                          duration: const Duration(milliseconds: 300),
+                          child: Container(
+                            width: 6, height: 6,
+                            margin: const EdgeInsets.only(right: 4),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFD32F2F),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      Text('${priceFormat.format(price)}원',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF1B2E5C))),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)}%',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: getChangeColor(change))),
+                      if (volume != null) ...[
+                        const SizedBox(width: 4),
+                        Text(NumberFormat.compact().format(volume),
+                            style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             ),
+          ),
+          // 실시간 토글 버튼
+          IconButton(
+            icon: Icon(
+              _isRealtimeOn ? Icons.cell_tower : Icons.cell_tower_outlined,
+              color: _isRealtimeOn ? const Color(0xFFD32F2F) : const Color(0xFF1B2E5C),
+              size: 20,
+            ),
+            tooltip: _isRealtimeOn ? '실시간 OFF' : '실시간 ON',
+            onPressed: _toggleRealtime,
           ),
           IconButton(icon: const Icon(Icons.tune, color: Color(0xFF1B2E5C), size: 20), onPressed: _showSettingsSheet),
         ],
