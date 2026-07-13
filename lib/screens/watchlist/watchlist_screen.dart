@@ -49,6 +49,7 @@ class _WatchlistScreenState extends State<WatchlistScreen>
   // Plan SC: SC-05 — 백그라운드 → 포그라운드 복원
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
     if (state == AppLifecycleState.paused) {
       _autoRefreshTimer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
@@ -66,7 +67,7 @@ class _WatchlistScreenState extends State<WatchlistScreen>
   }
 
   Future<void> _silentRefresh() async {
-    if (_isAutoRefreshing) return;
+    if (_isAutoRefreshing || !mounted) return;
     _isAutoRefreshing = true;
 
     try {
@@ -102,6 +103,7 @@ class _WatchlistScreenState extends State<WatchlistScreen>
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     final results = await Future.wait([
