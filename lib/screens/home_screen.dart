@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
-import 'macro/macro_dashboard_screen.dart';
+import 'home/market_home_screen.dart';
+import 'more/more_screen.dart';
 import 'my_info/my_info_screen.dart';
 import 'note/note_screen.dart';
 import 'notification_list_screen.dart';
 import 'stock/stock_search_screen.dart';
 import 'watchlist/watchlist_screen.dart';
 
-// Design Ref: §6.5 — HomeScreen with BottomNavigationBar (홈/Finance/내정보 3탭)
+// Design Ref: §6 — HomeScreen with BottomNavigationBar (홈/관심종목/노트/더보기/내정보 5탭)
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -21,9 +22,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
   final _pages = const [
-    MacroDashboardScreen(),
+    MarketHomeScreen(),
     WatchlistScreen(),
     NoteScreen(),
+    MoreScreen(),
     MyInfoScreen(),
   ];
 
@@ -152,6 +154,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.edit_note_outlined),
             activeIcon: Icon(Icons.edit_note),
             label: '노트',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.apps_outlined),
+            activeIcon: Icon(Icons.apps),
+            label: '더보기',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),

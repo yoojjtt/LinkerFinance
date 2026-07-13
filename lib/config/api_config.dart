@@ -58,4 +58,12 @@ class ApiConfig {
 
   // 일정관리
   static const String events = '/api/IV/quant/events';
+
+  // Design Ref: §4.1 — 스캐너 + 투자자 수급 신규 엔드포인트
+  static const String scannerResults = '/api/IV/scanner/results';
+  static const String investorSectorFlow = '/api/IV/quant/investor/sector-flow';
+  static const String investorMarketSummary =
+      '/api/IV/quant/investor/market-summary';
+  static const String investorSmartMoney =
+      '/api/IV/quant/investor/smart-money';
 }
