@@ -273,9 +273,11 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(children: [
-          Text(widget.stockName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1B2E5C))),
-          const SizedBox(width: 8),
-          Text(widget.stockCode, style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
+          Flexible(
+            child: Text(widget.stockName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1B2E5C)), overflow: TextOverflow.ellipsis),
+          ),
+          const SizedBox(width: 6),
+          Text(widget.stockCode, style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
         ]),
         actions: [
           // Design Ref: §5.1 — 실시간 가격 + 토글
